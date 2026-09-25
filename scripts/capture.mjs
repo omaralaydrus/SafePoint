@@ -1,0 +1,16 @@
+import { chromium } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+await mkdir('artifacts', { recursive: true });
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 });
+const errors = [];
+page.on('pageerror', error => errors.push(error.message));
+await page.goto('http://localhost:3400', { waitUntil: 'networkidle' });
+await page.locator('.place-card').first().waitFor({ timeout: 40000 });
+await page.screenshot({ path: 'artifacts/desktop.png', fullPage: true });
+await page.getByRole('button', { name: 'Hospitals', exact: true }).click();
+await page.screenshot({ path: 'artifacts/hospitals.png', fullPage: true });
+await page.setViewportSize({ width: 390, height: 844 });
+await page.screenshot({ path: 'artifacts/mobile.png', fullPage: true });
+console.log(JSON.stringify({ runtimeErrors: errors, mobileOverflow: await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), hospitalCards: await page.locator('.place-card').count() }));
+await browser.close();
